@@ -10,11 +10,47 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5174',
+// Configure CORS to allow multiple origins
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+  process.env.FRONTEND_URL,
+].filter(Boolean); // Remove undefined values
+
+// Add Vercel preview deployments pattern
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or Postman)
+    if (!origin) return callback(null, true);
+
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Allow all Vercel deployment URLs (including preview deployments)
+    if (origin.includes('.vercel.app')) {
+      return callback(null, true);
+    }
+
+    // Allow Netlify deployments
+    if (origin.includes('.netlify.app')) {
+      return callback(null, true);
+    }
+
+    // Allow Render deployments
+    if (origin.includes('.onrender.com')) {
+      return callback(null, true);
+    }
+
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
-}));
+};
+
+// Middleware
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
